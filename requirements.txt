@@ -8,8 +8,8 @@ psutil
 torch
 torchvision
 onnxruntime
-tqdm==4.66.4
+tqdm
 ftfy
 regex
 pyvirtualcam
-pydantic==2.10.4
+pydantic
