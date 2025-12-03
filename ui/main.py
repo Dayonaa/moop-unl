@@ -76,7 +76,7 @@ def run():
         ) as ui:
             with gr.Row(variant="compact"):
                 gr.Markdown(
-                    f"### [{moop.metadata.name} {moop.metadata.version}](https://gitlab.com/roop-unleashed/roop-unleashed)"
+                    f"### [{moop.metadata.name} {moop.metadata.version}](https://gitlab.com/moop-unleashed/moop-unleashed)"
                 )
                 gr.HTML(util.create_version_html(), elem_id="versions")
             faceswap_tab()

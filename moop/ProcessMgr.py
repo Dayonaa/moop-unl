@@ -146,7 +146,7 @@ class ProcessMgr:
             p = self.reuseOldProcessor(key)
             if p is None:
                 classname = self.plugins[key]
-                module = "roop.processors." + classname
+                module = "moop.processors." + classname
                 p = str_to_class(module, classname)
             if p is not None:
                 extoption.update({"devicename": devicename})

@@ -3,17 +3,15 @@
 import os
 import sys
 import shutil
+import onnxruntime
 
 # single thread doubles cuda performance - needs to be set before torch import
 if any(arg.startswith("--execution-provider") for arg in sys.argv):
     os.environ["OMP_NUM_THREADS"] = "1"
-
 import warnings
 from typing import List
 import platform
 import signal
-import torch
-import onnxruntime
 import pathlib
 import argparse
 
@@ -30,6 +28,17 @@ from moop.ProcessEntry import ProcessEntry
 from moop.ProcessMgr import ProcessMgr
 from moop.ProcessOptions import ProcessOptions
 from moop.capturer import get_video_frame_total, release_video
+
+use_torch = False
+
+# cek apakah perlu torch
+if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
+    use_torch = True
+
+if use_torch:
+    import torch
+else:
+    torch = None
 
 
 clip_text = None
@@ -92,17 +101,18 @@ def decode_execution_providers(execution_providers: List[str]) -> List[str]:
         )
     ]
 
-    try:
-        for i in range(len(list_providers)):
-            if list_providers[i] == "CUDAExecutionProvider":
-                list_providers[i] = (
-                    "CUDAExecutionProvider",
-                    {"device_id": moop.globals.cuda_device_id},
-                )
-                torch.cuda.set_device(moop.globals.cuda_device_id)
-                break
-    except:
-        pass
+    if torch is not None:
+        try:
+            for i in range(len(list_providers)):
+                if list_providers[i] == "CUDAExecutionProvider":
+                    list_providers[i] = (
+                        "CUDAExecutionProvider",
+                        {"device_id": moop.globals.cuda_device_id},
+                    )
+                    torch.cuda.set_device(moop.globals.cuda_device_id)
+                    break
+        except:
+            pass
 
     return list_providers
 
@@ -155,7 +165,8 @@ def release_resources() -> None:
 
     gc.collect()
     if (
-        "CUDAExecutionProvider" in moop.globals.execution_providers
+        torch is not None
+        and "CUDAExecutionProvider" in moop.globals.execution_providers
         and torch.cuda.is_available()
     ):
         with torch.cuda.device("cuda"):

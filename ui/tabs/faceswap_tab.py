@@ -193,6 +193,22 @@ def faceswap_tab():
                         elem_id="filelist",
                         height=233,
                     )
+                    # Tambahkan textbox untuk input path file target
+                    target_folder = gr.Textbox(
+                        show_label=False,
+                        placeholder="/path/to/target/file.mp4",
+                        interactive=True,
+                    )
+
+                    # Button untuk load file dari path
+                    bt_load_target_from_path = gr.Button("📁 Load File", size="sm")
+
+                    # Handler
+                    bt_load_target_from_path.click(
+                        fn=on_load_target_files,
+                        inputs=[target_folder],
+                        outputs=[bt_destfiles],
+                    )
                 with gr.Row(variant="panel"):
                     ui.globals.ui_selected_swap_model = gr.Dropdown(
                         model_swap_choices,
@@ -646,6 +662,41 @@ def on_add_local_folder(folder):
     if files is None:
         gr.Warning("Empty folder or folder not found!")
     return files
+
+
+def on_load_target_files(file_path):
+    """Load target file dari path langsung untuk bt_destfiles"""
+    if not file_path or file_path.strip() == "":
+        gr.Warning("Please provide a file path!")
+        return None
+
+    file_path = file_path.strip()
+
+    # Check if file exists
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        gr.Warning(f"File not found: {file_path}")
+        return None
+
+    # Check if file has valid extension
+    valid_extensions = (
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".mp4",
+        ".avi",
+        ".mov",
+        ".mkv",
+        ".flv",
+        ".wmv",
+        ".webm",
+    )
+    if not file_path.lower().endswith(valid_extensions):
+        gr.Warning(f"File format not supported! Supported formats: image, video, .webp")
+        return None
+
+    # Return path string directly - Gradio will handle it
+    return [file_path]
 
 
 def on_srcfile_changed(srcfiles, progress=gr.Progress()):
