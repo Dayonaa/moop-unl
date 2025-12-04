@@ -194,6 +194,18 @@ def faceswap_tab():
                         height=233,
                     )
                 with gr.Row(variant="panel"):
+                    target_file_path = gr.Textbox(
+                        show_label=False,
+                        placeholder="/path/to/target/file.mp4",
+                        interactive=True,
+                    )
+                    bt_load_target_file = gr.Button("📁 Load File", size="sm")
+                    bt_load_target_file.click(
+                        fn=on_load_target_files,
+                        inputs=[target_file_path],
+                        outputs=[bt_destfiles],
+                    )
+                with gr.Row(variant="panel"):
                     ui.globals.ui_selected_swap_model = gr.Dropdown(
                         model_swap_choices,
                         value=model_swap_choices[0],
@@ -639,6 +651,41 @@ def on_mask_engine_changed(mask_engine):
     if mask_engine == "Clip2Seg":
         return gr.Textbox(interactive=True)
     return gr.Textbox(interactive=False)
+
+
+def on_load_target_files(file_path):
+    """Load target file dari path langsung untuk bt_destfiles"""
+    if not file_path or file_path.strip() == "":
+        gr.Warning("Please provide a file path!")
+        return None
+
+    file_path = file_path.strip()
+
+    # Check if file exists
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        gr.Warning(f"File not found: {file_path}")
+        return None
+
+    # Check if file has valid extension
+    valid_extensions = (
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".webp",
+        ".mp4",
+        ".avi",
+        ".mov",
+        ".mkv",
+        ".flv",
+        ".wmv",
+        ".webm",
+    )
+    if not file_path.lower().endswith(valid_extensions):
+        gr.Warning(f"File format not supported! Supported formats: image, video, .webp")
+        return None
+
+    # Return path string directly - Gradio will handle it
+    return [file_path]
 
 
 def on_add_local_folder(folder):

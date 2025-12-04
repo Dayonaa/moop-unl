@@ -398,7 +398,11 @@ def create_version_html() -> str:
     """
         return versions_html
     except Exception as e:
-        return f"Error retrieving versions: {str(e)}"
+        return f"""
+    python: <span title="{sys.version}">{python_version}</span>
+    •
+    gradio: {gradio.__version__}
+    """
 
 
 def compute_cosine_distance(emb1, emb2) -> float:
