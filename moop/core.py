@@ -3,17 +3,15 @@
 import os
 import sys
 import shutil
+import onnxruntime
 
 # single thread doubles cuda performance - needs to be set before torch import
 if any(arg.startswith("--execution-provider") for arg in sys.argv):
     os.environ["OMP_NUM_THREADS"] = "1"
-
 import warnings
 from typing import List
 import platform
 import signal
-import torch
-import onnxruntime
 import pathlib
 import argparse
 
@@ -30,6 +28,17 @@ from moop.ProcessEntry import ProcessEntry
 from moop.ProcessMgr import ProcessMgr
 from moop.ProcessOptions import ProcessOptions
 from moop.capturer import get_video_frame_total, release_video
+
+use_torch = False
+
+# cek apakah perlu torch
+if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
+    use_torch = True
+
+if use_torch:
+    import torch
+else:
+    torch = None
 
 
 clip_text = None
@@ -92,17 +101,18 @@ def decode_execution_providers(execution_providers: List[str]) -> List[str]:
         )
     ]
 
-    try:
-        for i in range(len(list_providers)):
-            if list_providers[i] == "CUDAExecutionProvider":
-                list_providers[i] = (
-                    "CUDAExecutionProvider",
-                    {"device_id": moop.globals.cuda_device_id},
-                )
-                torch.cuda.set_device(moop.globals.cuda_device_id)
-                break
-    except:
-        pass
+    if torch is not None:
+        try:
+            for i in range(len(list_providers)):
+                if list_providers[i] == "CUDAExecutionProvider":
+                    list_providers[i] = (
+                        "CUDAExecutionProvider",
+                        {"device_id": moop.globals.cuda_device_id},
+                    )
+                    torch.cuda.set_device(moop.globals.cuda_device_id)
+                    break
+        except:
+            pass
 
     return list_providers
 
@@ -155,7 +165,8 @@ def release_resources() -> None:
 
     gc.collect()
     if (
-        "CUDAExecutionProvider" in moop.globals.execution_providers
+        torch is not None
+        and "CUDAExecutionProvider" in moop.globals.execution_providers
         and torch.cuda.is_available()
     ):
         with torch.cuda.device("cuda"):
@@ -176,35 +187,27 @@ def pre_check() -> bool:
         [
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/inswapper_128.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/InSwapper/inswapper_128.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/reswapper_128.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/ReSwapper/reswapper_128.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/reswapper_256.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/ReSwapper/reswapper_256.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/GFPGANv1.4.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/GFPGAN/GFPGANv1.4.onnx",
             ],
             [
                 "https://github.com/csxmli2016/DMDNet/releases/download/v1/DMDNet.pth",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/DMDNet/DMDNet.pth",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/GPEN-BFR-512.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/GPEN/GPEN-BFR-512.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/restoreformer_plus_plus.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/RestoreFormer/restoreformer_plus_plus.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/xseg.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/xseg.onnx",
             ],
         ],
     )
@@ -214,7 +217,6 @@ def pre_check() -> bool:
         [
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/rd64-uni-refined.pth",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/rd64-uni-refined.pth",
             ]
         ],
     )
@@ -224,23 +226,18 @@ def pre_check() -> bool:
         [
             [
                 "https://huggingface.co/halllooo/buffalo_l/resolve/main/1k3d68.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/buffalo_l/1k3d68.onnx",
             ],
             [
                 "https://huggingface.co/halllooo/buffalo_l/resolve/main/2d106det.onnx",
-                "https://codeberg.org/moop-unleashed/models/media/branch/main/buffalo_l/2d106det.onnx",
             ],
             [
                 "https://huggingface.co/halllooo/buffalo_l/resolve/main/det_10g.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/buffalo_l/det_10g.onnx",
             ],
             [
                 "https://huggingface.co/halllooo/buffalo_l/resolve/main/genderage.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/buffalo_l/genderage.onnx",
             ],
             [
                 "https://huggingface.co/halllooo/buffalo_l/resolve/main/w600k_r50.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/buffalo_l/w600k_r50.onnx",
             ],
         ],
     )
@@ -250,7 +247,6 @@ def pre_check() -> bool:
         [
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/CodeFormerv0.1.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/CodeFormer/CodeFormerv0.1.onnx",
             ]
         ],
     )
@@ -260,27 +256,21 @@ def pre_check() -> bool:
         [
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/deoldify_artistic.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/DeOldify/deoldify_artistic.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/deoldify_stable.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/DeOldify/deoldify_stable.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/isnet-general-use.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/isnet-general-use.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/real_esrgan_x4.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/real_esrgan_x4.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/real_esrgan_x2.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/real_esrgan_x2.onnx",
             ],
             [
                 "https://huggingface.co/countfloyd/deepfake/resolve/main/lsdir_x4.onnx",
-                "https://codeberg.org/roop-unleashed/models/media/branch/main/lsdir_x4.onnx",
             ],
         ],
     )
@@ -308,11 +298,11 @@ def start() -> None:
     if moop.globals.headless:
         print("Headless mode currently unsupported - starting UI!")
         # faces = extract_face_images(moop.globals.source_path,  (False, 0))
-        # moop.globals.INPUT_FACES.append(faces[moop.globals.source_face_index])
-        # faces = extract_face_images(moop.globals.target_path,  (False, util.has_image_extension(moop.globals.target_path)))
-        # moop.globals.TARGET_FACES.append(faces[moop.globals.target_face_index])
-        # if 'face_enhancer' in moop.globals.frame_processors:
-        #     moop.globals.selected_enhancer = 'GFPGAN'
+        # roop.globals.INPUT_FACES.append(faces[roop.globals.source_face_index])
+        # faces = extract_face_images(roop.globals.target_path,  (False, util.has_image_extension(roop.globals.target_path)))
+        # roop.globals.TARGET_FACES.append(faces[roop.globals.target_face_index])
+        # if 'face_enhancer' in roop.globals.frame_processors:
+        #     roop.globals.selected_enhancer = 'GFPGAN'
 
     batch_process_regular(None, False, None)
 
@@ -344,7 +334,7 @@ def live_swap(frame, options):
     if process_mgr is None:
         process_mgr = ProcessMgr(None)
 
-    #    if len(moop.globals.INPUT_FACESETS) <= selected_index:
+    #    if len(roop.globals.INPUT_FACESETS) <= selected_index:
     #        selected_index = 0
     process_mgr.initialize(
         moop.globals.INPUT_FACESETS, moop.globals.TARGET_FACES, options
