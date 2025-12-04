@@ -297,7 +297,7 @@ def update_status(message: str) -> None:
 def start() -> None:
     if moop.globals.headless:
         print("Headless mode currently unsupported - starting UI!")
-        # faces = extract_face_images(roop.globals.source_path,  (False, 0))
+        # faces = extract_face_images(moop.globals.source_path,  (False, 0))
         # roop.globals.INPUT_FACES.append(faces[roop.globals.source_face_index])
         # faces = extract_face_images(roop.globals.target_path,  (False, util.has_image_extension(roop.globals.target_path)))
         # roop.globals.TARGET_FACES.append(faces[roop.globals.target_face_index])
@@ -587,8 +587,9 @@ def run() -> None:
     moop.globals.execution_threads = moop.globals.CFG.max_threads
     moop.globals.video_encoder = moop.globals.CFG.output_video_codec
     moop.globals.video_quality = moop.globals.CFG.video_quality
-    moop.globals.CFG.server_share = True
     moop.globals.max_memory = (
         moop.globals.CFG.memory_limit if moop.globals.CFG.memory_limit > 0 else None
     )
+    if moop.globals.startup_args.server_share:
+        moop.globals.CFG.server_share = True
     main.run()
