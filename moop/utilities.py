@@ -7,6 +7,7 @@ import ssl
 import subprocess
 import sys
 import urllib
+import torch
 import gradio
 import tempfile
 import cv2
@@ -15,7 +16,7 @@ import traceback
 import threading
 import threading
 import random
-import onnxruntime
+
 from typing import Union, Any
 from contextlib import nullcontext
 
@@ -28,17 +29,6 @@ from urllib.parse import urlparse
 import moop.template_parser as template_parser
 
 import moop.globals
-
-use_torch = False
-
-# cek apakah perlu torch
-if "CUDAExecutionProvider" in onnxruntime.get_available_providers():
-    use_torch = True
-
-if use_torch:
-    import torch
-else:
-    torch = None
 
 TEMP_FILE = "temp.mp4"
 TEMP_DIRECTORY = "temp"
@@ -387,18 +377,15 @@ def open_folder(path: str):
 
 
 def create_version_html() -> str:
-    try:
-        python_version = ".".join([str(x) for x in sys.version_info[0:3]])
-        versions_html = f"""
-    python: <span title="{sys.version}">{python_version}</span>
-    •
-    torch: {getattr(torch, "__long_version__", torch.__version__)}
-    •
-    gradio: {gradio.__version__}
-    """
-        return versions_html
-    except Exception as e:
-        return f"Error retrieving versions: {str(e)}"
+    python_version = ".".join([str(x) for x in sys.version_info[0:3]])
+    versions_html = f"""
+python: <span title="{sys.version}">{python_version}</span>
+•
+torch: {getattr(torch, "__long_version__", torch.__version__)}
+•
+gradio: {gradio.__version__}
+"""
+    return versions_html
 
 
 def compute_cosine_distance(emb1, emb2) -> float:
@@ -406,10 +393,7 @@ def compute_cosine_distance(emb1, emb2) -> float:
 
 
 def has_cuda_device():
-    try:
-        return torch.cuda is not None and torch.cuda.is_available()
-    except:
-        return False
+    return torch.cuda is not None and torch.cuda.is_available()
 
 
 def print_cuda_info():
